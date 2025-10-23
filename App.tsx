@@ -96,9 +96,18 @@ const App: React.FC = () => {
     const handleOnColor = useCallback(() => {
         if (aiCanvasRef.current && activeHistoryId) {
             const coloredDataUrl = aiCanvasRef.current.toDataURL('image/png');
-            setHistory(prev => prev.map(item =>
-                item.id === activeHistoryId ? { ...item, coloredImageDataUrl: coloredDataUrl } : item
-            ));
+            setHistory(prev => {
+                const newHistory = prev.map(item =>
+                    item.id === activeHistoryId ? { ...item, coloredImageDataUrl: coloredDataUrl } : item
+                );
+                try {
+                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                } catch (e) {
+                    console.error("Failed to save history to localStorage", e);
+                    setError("Could not save your coloring progress. The browser storage might be full.");
+                }
+                return newHistory;
+            });
         }
     }, [activeHistoryId]);
 
@@ -113,13 +122,22 @@ const App: React.FC = () => {
     const handleClearColoring = () => {
         clearColoringCanvas();
         if (activeHistoryId) {
-            setHistory(prev => prev.map(item => {
-                if (item.id === activeHistoryId) {
-                    const { coloredImageDataUrl, ...rest } = item;
-                    return rest;
+            setHistory(prev => {
+                const newHistory = prev.map(item => {
+                    if (item.id === activeHistoryId) {
+                        const { coloredImageDataUrl, ...rest } = item;
+                        return rest;
+                    }
+                    return item;
+                });
+                try {
+                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                } catch (e) {
+                    console.error("Failed to save history to localStorage", e);
+                    setError("Could not save your changes. The browser storage might be full.");
                 }
-                return item;
-            }));
+                return newHistory;
+            });
         }
     };
 
@@ -142,14 +160,6 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // Save history to localStorage whenever it changes
-    useEffect(() => {
-        try {
-            localStorage.setItem('coloringBookHistory', JSON.stringify(history));
-        } catch (e) {
-            console.error("Failed to save history to localStorage", e);
-        }
-    }, [history]);
 
     const stopMusic = useCallback(() => {
         if (musicSourceRef.current) {
@@ -230,7 +240,16 @@ const App: React.FC = () => {
                 generatedImage: newImageBase64,
                 storyText: null,
             };
-            setHistory(prev => [...prev, newHistoryItem]);
+            setHistory(prev => {
+                const newHistory = [...prev, newHistoryItem];
+                try {
+                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                } catch (e) {
+                    console.error("Failed to save history to localStorage", e);
+                    setError("Creation saved, but failed to store in browser history. Storage might be full.");
+                }
+                return newHistory;
+            });
             setActiveHistoryId(newHistoryItem.id);
             setUserDrawingDataUrl(newUserDrawingUrl);
 
@@ -264,9 +283,18 @@ const App: React.FC = () => {
             const story = await generateStory(activeItem.recognizedText);
             setStoryText(story);
             
-            setHistory(prev => prev.map(item => 
-                item.id === activeHistoryId ? { ...item, storyText: story } : item
-            ));
+            setHistory(prev => {
+                const newHistory = prev.map(item => 
+                    item.id === activeHistoryId ? { ...item, storyText: story } : item
+                );
+                try {
+                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                } catch (e) {
+                    console.error("Failed to save history to localStorage", e);
+                    setError("Could not save the story to browser history. Storage might be full.");
+                }
+                return newHistory;
+            });
 
             setIsStoryMode(true);
         } catch (err) {
@@ -314,9 +342,18 @@ const App: React.FC = () => {
                 throw new Error("Video generation completed, but no video URL was found.");
             }
 
-            setHistory(prev => prev.map(item =>
-                item.id === activeHistoryId ? { ...item, videoApiUri: videoUri } : item
-            ));
+            setHistory(prev => {
+                const newHistory = prev.map(item =>
+                    item.id === activeHistoryId ? { ...item, videoApiUri: videoUri } : item
+                );
+                try {
+                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                } catch (e) {
+                    console.error("Failed to save history to localStorage", e);
+                    setError("Could not save video info to browser history. Storage might be full.");
+                }
+                return newHistory;
+            });
 
         } catch (err) {
             console.error(err);
@@ -458,9 +495,18 @@ const App: React.FC = () => {
 
                 if (jobId !== audioJobIdRef.current) return;
                 
-                setHistory(prev => prev.map(item => 
-                    item.id === activeHistoryId ? { ...item, speechData: newSpeechData, storyImageDataUrl: newStoryImageData } : item
-                ));
+                setHistory(prev => {
+                    const newHistory = prev.map(item => 
+                        item.id === activeHistoryId ? { ...item, speechData: newSpeechData, storyImageDataUrl: newStoryImageData } : item
+                    );
+                    try {
+                        localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                    } catch (e) {
+                        console.error("Failed to save history to localStorage", e);
+                        setError("Could not save story assets to browser history. Storage might be full.");
+                    }
+                    return newHistory;
+                });
                 
                 await playAudioFromData(newSpeechData);
 
@@ -496,17 +542,31 @@ const App: React.FC = () => {
         if (window.confirm("Are you sure you want to clear all your saved creations?")) {
             handleClearDrawing();
             setHistory([]);
+            try {
+                localStorage.removeItem('coloringBookHistory');
+            } catch (e) {
+                console.error("Failed to clear history from localStorage", e);
+                setError("Could not clear browser history. Storage might be full or permissions are denied.");
+            }
         }
     };
 
     const handleDeleteHistoryItem = (idToDelete: number, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent handleHistoryClick from firing
         if (window.confirm("Are you sure you want to delete this creation?")) {
-            // If the item to be deleted is currently active, clear the view.
             if (activeHistoryId === idToDelete) {
                 handleClearDrawing();
             }
-            setHistory(prev => prev.filter(item => item.id !== idToDelete));
+            setHistory(prev => {
+                const newHistory = prev.filter(item => item.id !== idToDelete);
+                try {
+                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+                } catch (e) {
+                    console.error("Failed to save history to localStorage", e);
+                    setError("Could not update browser history. Storage might be full.");
+                }
+                return newHistory;
+            });
         }
     };
 
