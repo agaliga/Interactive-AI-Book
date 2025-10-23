@@ -171,7 +171,7 @@ export async function startVideoGeneration(promptText: string): Promise<Operatio
             config: {
                 numberOfVideos: 1,
                 resolution: '720p',
-                aspectRatio: '1:1' // Match the square canvas
+                aspectRatio: '9:16' // Portrait aspect ratio
             }
         });
         return operation;

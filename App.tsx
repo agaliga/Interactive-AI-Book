@@ -554,19 +554,21 @@ const App: React.FC = () => {
     const handleDeleteHistoryItem = (idToDelete: number, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent handleHistoryClick from firing
         if (window.confirm("Are you sure you want to delete this creation?")) {
+            // First, update the state for other parts of the UI if the active item is deleted
             if (activeHistoryId === idToDelete) {
                 handleClearDrawing();
             }
-            setHistory(prev => {
-                const newHistory = prev.filter(item => item.id !== idToDelete);
-                try {
-                    localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
-                } catch (e) {
-                    console.error("Failed to save history to localStorage", e);
-                    setError("Could not update browser history. Storage might be full.");
-                }
-                return newHistory;
-            });
+            
+            // Update the history state and persist to localStorage
+            const newHistory = history.filter(item => item.id !== idToDelete);
+            setHistory(newHistory);
+            
+            try {
+                localStorage.setItem('coloringBookHistory', JSON.stringify(newHistory));
+            } catch (err) {
+                console.error("Failed to save history to localStorage", err);
+                setError("Could not update browser history. Storage might be full.");
+            }
         }
     };
 
