@@ -1,0 +1,5 @@
+{
+  "name": "Copy of AI Coloring Book Creator",
+  "description": "A fun application for kids to draw a simple picture, which an AI then transforms into a beautiful, clean coloring book page. The app first recognizes the drawing and then generates new line art based on that recognition.",
+  "requestFramePermissions": []
+}
