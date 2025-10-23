@@ -4,7 +4,7 @@ import { useDrawingCanvas } from './hooks/useDrawingCanvas';
 import { useColoringCanvas } from './hooks/useColoringCanvas';
 import { Spinner } from './components/Spinner';
 import { MessageBox } from './components/MessageBox';
-import { PaintBrushIcon, SparklesIcon, BookOpenIcon, SpeakerWaveIcon, StopIcon, SpeakerXMarkIcon, ButtonSpinner, FilmIcon } from './components/Icons';
+import { PaintBrushIcon, SparklesIcon, BookOpenIcon, SpeakerWaveIcon, StopIcon, SpeakerXMarkIcon, ButtonSpinner, FilmIcon, XMarkIcon } from './components/Icons';
 import { Operation } from '@google/genai';
 
 // Helper function to decode base64 string to Uint8Array
@@ -494,8 +494,19 @@ const App: React.FC = () => {
 
     const handleClearHistory = () => {
         if (window.confirm("Are you sure you want to clear all your saved creations?")) {
-            setHistory([]);
             handleClearDrawing();
+            setHistory([]);
+        }
+    };
+
+    const handleDeleteHistoryItem = (idToDelete: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent handleHistoryClick from firing
+        if (window.confirm("Are you sure you want to delete this creation?")) {
+            // If the item to be deleted is currently active, clear the view.
+            if (activeHistoryId === idToDelete) {
+                handleClearDrawing();
+            }
+            setHistory(prev => prev.filter(item => item.id !== idToDelete));
         }
     };
 
@@ -705,14 +716,23 @@ const App: React.FC = () => {
                                 </div>
                                 <div className="flex flex-wrap gap-2 p-2 bg-gray-100 rounded-md">
                                     {history.map((item, index) => (
-                                        <button 
-                                            key={item.id}
-                                            onClick={() => handleHistoryClick(item.id)}
-                                            className={`relative w-10 h-10 rounded-md flex items-center justify-center font-bold text-gray-700 transition-colors ${activeHistoryId === item.id ? 'bg-blue-500 text-white ring-2 ring-blue-700' : 'bg-white hover:bg-blue-100'}`}
-                                        >
-                                            {index + 1}
-                                            {item.videoApiUri && <FilmIcon className="absolute -top-1 -right-1 w-4 h-4 text-teal-500 bg-white rounded-full p-0.5" />}
-                                        </button>
+                                        <div key={item.id} className="relative group">
+                                            <button 
+                                                onClick={() => handleHistoryClick(item.id)}
+                                                className={`w-10 h-10 rounded-md flex items-center justify-center font-bold text-gray-700 transition-colors ${activeHistoryId === item.id ? 'bg-blue-500 text-white ring-2 ring-blue-700' : 'bg-white hover:bg-blue-100'}`}
+                                            >
+                                                {index + 1}
+                                                {item.videoApiUri && <FilmIcon className="absolute -top-1 -right-1 w-4 h-4 text-teal-500 bg-white rounded-full p-0.5" />}
+                                            </button>
+                                            <button
+                                                onClick={(e) => handleDeleteHistoryItem(item.id, e)}
+                                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
+                                                aria-label={`Delete creation ${index + 1}`}
+                                                title={`Delete creation ${index + 1}`}
+                                            >
+                                                <XMarkIcon className="w-3 h-3" />
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
